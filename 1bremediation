@@ -35,19 +35,20 @@ trap ctrl_Z 2 20
 
 #create new hard disk first
 printf "\e[1mCreating new hard disk\e[0m\n"
+printf "\e[1m[31mPLEASE CREATE A NEW HARD DISK WITH 20GB\e[0m\n"
 parted -s /dev/sdb mklabel msdos #makes an MSDOS partition table 
 parted -s /dev/sdb mkpart primary ext2 0% 100% #make primary partition, from size 0% to 100%
 parted -s /dev/sdb set 1 lvm on #make partition 1 of /dev/sdb an lvm partition
 pvcreate /dev/sdb1
 vgextend rhel /dev/sdb1
-printf "\e32mExecuted.\e[0m\n"
+
 
 
 #1.1-1.4 /tmp
 printf "\e[1mCreating separate /tmp partition and setting options.\e[0m\n"
 if lvcreate -l 10%VG -n tmp rhel ; then
 	echo "/dev/rhel/tmp	/tmp	ext4	nodev,nosuid,noexec	0 0" >> /etc/fstab
-	printf "\e32mExecuted.\e[0m\n"
+	printf "\e[32mExecuted.\e[0m\n"
 else
 	printf "\e[31mUnable to create /tmp!\e[0m\n"
 fi
@@ -57,7 +58,7 @@ fi
 printf "\e[1mCreating separate /var partition.\e[0m\n"
 if lvcreate -l 10%VG -n var rhel ; then
 	echo "/dev/rhel/var	/var	ext4	defaults	0 0" >> /etc/fstab
-	printf "\e32mExecuted.\e[0m\n"
+	printf "\e[32mExecuted.\e[0m\n"
 else
 	printf "\e[31mUnable to create /var!\e[0m\n"
 fi
@@ -67,7 +68,7 @@ fi
 printf "\e[1mBinding mount.\e[0m\n"
 printf "/tmp /var/tmp none bind 0 0" >> /etc/fstab
 mount --bind /tmp /var/tmp
-printf "\e32mExecuted.\e[0m\n"
+printf "\e[32mExecuted.\e[0m\n"
 
 
 #1.7 /var/log
@@ -75,7 +76,7 @@ printf "\e[1mCreating separate partition for /var/log\e[0m\n"
 if lvcreate -l 10%VG -n log rhel ; then
 	ln -s /log /var/log
 	echo "/dev/rhel/log	/var/log	ext4	defaults	0 0" >> /etc/fstab
-	printf "\e32mExecuted.\e[0m\n"
+	printf "\e[32mExecuted.\e[0m\n"
 else
 	printf "\e[31mUnable to create /var/log! Manual configuration required.\e[0m\n"
 fi
@@ -86,7 +87,7 @@ printf "\e[1mCreating separate partition for /var/log/audit\e[0m\n"
 if lvcreate -l 10%VG -n audit rhel ; then
 	ln -s /audit /var/log/audit
 	echo "/dev/rhel/audit	/var/log/audit	ext4	defaults	0 0" >> /etc/fstab
-	printf "\e32mExecuted.\e[0m\n"
+	printf "\e[32mExecuted.\e[0m\n"
 else
 	printf "\e[31mUnable to create /var/log/audit! Manual configuration required.\e[0m\n"
 fi
@@ -96,7 +97,7 @@ fi
 printf "\e[1mCreating separate partition for /home and setting options.\e[0m\n"
 if lvcreate -l 10%VG -n home rhel ; then
 	echo "/dev/rhel/home	/home	ext4	nodev	0 0" >> /etc/fstab
-	printf "\e32mExecuted.\e[0m\n"
+	printf "\e[32mExecuted.\e[0m\n"
 else
 	printf "\e[31mUnable to create /home!\e[0m\n"
 fi
@@ -107,15 +108,15 @@ printf "\e[1mSetting options for Removable Media Partitions\e[0m\n"
 if grep -e cdrom -e floppy /etc/fstab > /dev/null; then
 	sed -i '/cdrom/ s/defaults/nodev,nosuid,noexec/g' /etc/fstab
 	sed -i '/floppy/ s/defaults/nodev,nosuid,noexec/g' /etc/fstab
-	printf "\e32mExecuted.\e[0m\n"
+	printf "\e[32mExecuted.\e[0m\n"
 else
 	printf "\e[31mNo cdrom or floppy found!\e[0m\n"
 fi
 
 
 #1.14 sticky bit
-#df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d \(-perm -0002 -a ! -perm -1000 \) 2> /dev/null | xargs chmod o+t
 printf "\e[1mSetting Sticky Bit on All World-Writable Directories\e[0m\n"
+#df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d \(-perm -0002 -a ! -perm -1000 \) 2> /dev/null | xargs chmod o+t
 printf "\e[31mUnable to set sticky bit.\e[0m\n"
 
 #1.15 legacy filesystems
@@ -127,73 +128,136 @@ printf "install hfs /bin/true\n" >> /etc/modprobe.d/CIS.conf
 printf "install hfsplus /bin/true\n" >> /etc/modprobe.d/CIS.conf
 printf "install squashfs /bin/true\n" >> /etc/modprobe.d/CIS.conf
 printf "install udf /bin/true\n" >> /etc/modprobe.d/CIS.conf
-printf "\e32mExecuted.\e[0m\n"
+printf "\e[32mExecuted.\e[0m\n"
+
+
+#Verify the package integrity
+echo "Verify Package Integrity Using RPM"
+printf "Might have unexpected discrepancies identified in the audit step\n"
+
 
 #Part 2
 
-echo Verify Package Integrity Using RPM
-echo ----------------
-echo Address unexpected discrepancies identified in the audit step
-echo ----------------
-
 #2.1
 printf "\e[1mRemove telnet Server & Clients\e[0m\n"
+if yum list telnet-server | grep "Available Packages" && yum list telnet | grep "Available Packages" >/dev/null ; then
+printf "\e[32mtelnet-server and clients not installed\e[0m\n"
+else
+printf "\e[34mDisabling server and clients\e[0m\n"
 result=`yum -y erase telnet-server`
 result=`yum -y erase telnet`
+printf "\e[32mExecuted.\e[0m\n" 
+fi
 
 #2.2
 printf "\e[1mRemove rsh Server and Clients\e[0m\n"
+if yum list rsh-server | grep "Available Packages" && yum list rsh | grep "Available Packages" >/dev/null ; then
+printf "\e[32mRSH server and clients not installed\e[0m\n"
+else
+printf "\e[34mDisabling server and clients\e[0m\n"
 result=`yum -y erase rsh-server`
 result=`yum -y erase rsh`
+printf "\e[32mExecuted.\e[0m\n" 
+fi
 
 #2.3
 printf "\e[1mRemove NIS Server & Clients\e[0m\n"
+if yum list ypserv | grep "Available Packages" && yum list ypbind | grep "Available Packages" >/dev/null ; then
+printf "\e[32mNIS Server and Clients not installed\e[0m\n"
+else
+printf "\e[34mDisabling server and clients\e[0m\n"
 result=`yum -y erase ypserv`
 result=`yum -y erase ypbind`
+printf "\e[32mExecuted.\e[0m\n" 
+fi
 
 #2.4
 printf "\e[1mRemove tftp Server and Clients\e[0m\n"
+if yum list tftp-server | grep "Available Packages" && yum list tftp | grep "Available Packages" >/dev/null ; then
+printf "\e[32mtftp Server and Clients not installed\e[0m\n"
+else
+printf "\e[34mDisabling server\e[0m\n"
 result=`yum -y erase tftp`
 result=`yum -y erase tftp-server`
+printf "\e[32mExecuted.\e[0m\n" 
+fi
 
 #2.5
 printf "\e[1mRemove xinetd\e[0m\n"
-printf "\e[31mWarning! Removing xinetd will uninstall components required for the next few steps."\e[0m\n
-result=`yum -y erase xinetd`
-printf "\e[32mExecuted\e[0m\n"
+if yum list xinetd | grep "Installed Packages" >/dev/null ; then
+	printf "\e[31mXinetd installed. Attempting to remove.\e[0m\n"
+	result=`yum -y erase xinetd`
+	printf "\e[32mExecuted\e[0m\n"
+else
+printf "\e[32mXinetd is not installed.\e[0m\n"
+fi
 
 #2.6
 printf "\e[1mDisable chargen-dgram\e[0m\n"
-printf "\e[32mChargen-Dgram is not installed. Xinetd was removed\e[0m\n"
-#result=`chkconfig chargen-dgram off`
-
-
+if yum list xinetd | grep "Available Packages" >/dev/null ; then
+	printf "\e[32mAlready removed Chargen-Dgram from removing Xinetd.\e[0m\n"
+elif yum list xinetd | grep "Installed Packages" && chkconfig --list chargen-dgram | grep "on" >/dev/null ; then
+	printf "\e[31m Chargen-Dgram enabled. Attempting to disable.\e[0m\n"
+	result=`chkconfig chargen-dgram off`
+else 
+	printf "\e[32mChargen-Dgram is already disabled.\e[0m\n"
+fi
 
 #2.7
 printf "\e[1mDisable chargen-stream\e[0m\n"
-printf "\e[32mChargen-stream is not installed. Xinetd was removed\e[0m\n"
-#result=`chkconfig chargen-dgram off`
-
+if yum list xinetd | grep "Available Packages" >/dev/null ; then
+	printf "\e[32mAlready removed Chargen-stream from removing Xinetd.\e[0m\n"
+elif yum list xinetd | grep "Installed Packages" && chkconfig --list chargen-stream | grep "on" >/dev/null ; then
+	printf "\e[31m Chargen-stream enabled. Attempting to disable.\e[0m\n"
+	result=`chkconfig chargen-stream off`
+else 
+	printf "\e[32mChargen-stream is already disabled.\e[0m\n"
+fi
 
 #2.8
 printf "\e[1mDisable daytime-dgram/daytime-stream\e[0m\n"
-printf "\e[32mDaytime-Dgram/Daytime-Stream is not installed. Xinetd was removed\e[0m\n"
-#result=`chkconfig daytime-dgram off`
-#result=`chkconfig daytime-stream off`
-
+if yum list xinetd | grep "Available Packages" >/dev/null ; then
+	printf "\e[32mAlready removed daytime-dgram and daytime-stream from removing Xinetd.\e[0m\n"
+elif yum list xinetd | grep "Installed Packages" && chkconfig --list daytime-dgram | grep "on" && chkconfig --list daytime-stream | grep "on" >/dev/null ; then
+	printf "\e[31m Daytime-dgram and Daytime-stream enabled. Attempting to disable.\e[0m\n"
+	result=`chkconfig daytime-dgram off`
+	result=`chkconfig daytime-stream off`
+elif yum list xinetd | grep "Installed Packages" && chkconfig --list daytime-dgram | grep "off" && chkconfig --list daytime-stream | grep "off" >/dev/null ; then
+	printf "\e[32mDaytime-dgram and daytime-stream are disabled.\e[0m\n"
+else
+	printf "\e[31m One is not disabled. Attempting to disable.\e[0m\n"
+	result=`chkconfig daytime-dgram off`
+	result=`chkconfig daytime-stream off`
+	printf "\e[32mDisabled.\e[0m\n"
+fi
 
 #2.9
 printf "\e[1mDisable echo-dgram/echo-stream\e[0m\n"
-printf "\e[32mEcho-Dgram is not installed. Xinetd was removed\e[0m\n"
-#result=`chkconfig echo-dgram off`
-#result=`chkconfig echo-stream off`
-
+if yum list xinetd | grep "Available Packages" >/dev/null ; then
+	printf "\e[32mAlready removed echo-dgram and echo-stream from removing Xinetd.\e[0m\n"
+elif yum list xinetd | grep "Installed Packages" && chkconfig --list echo-dgram | grep "on" && chkconfig --list echo-stream | grep "on" >/dev/null ; then
+	printf "\e[31m Echo-dgram and Echo-stream enabled. Attempting to disable.\e[0m\n"
+	result=`chkconfig echo-dgram off`
+	result=`chkconfig echo-stream off`
+elif yum list xinetd | grep "Installed Packages" && chkconfig --list echo-dgram | grep "off" && chkconfig --list echo-stream | grep "off" >/dev/null ; then
+	printf "\e[32mEcho-dgram and Echo-stream are disabled.\e[0m\n"
+else
+	printf "\e[31m One is not disabled. Attempting to disable.\e[0m\n"
+	result=`chkconfig echo-dgram off`
+	result=`chkconfig echo-stream off`
+	printf "\e[32mDisabled.\e[0m\n"
+fi
 
 #2.10
 printf "\e[1mDisable tcpmux-server\e[0m\n"
-printf "\e[32mTcpmux-server is not installed. Xinetd was removed\e[0m\n"
-#result=`chkconfig tcpmux-server off`
-
+if yum list xinetd | grep "Available Packages" >/dev/null ; then
+	printf "\e[32mAlready removed Tcpmux-server from removing Xinetd.\e[0m\n"
+elif yum list xinetd | grep "Installed Packages" && chkconfig --list tcpmux-server | grep "on" >/dev/null ; then
+	printf "\e[31m Tcpmux-server enabled. Attempting to disable.\e[0m\n"
+	result=`chkconfig tcpmux-server off`
+else 
+	printf "\e[32mTcpmux-server is already disabled.\e[0m\n"
+fi
 
 #Part 3
 
@@ -209,7 +273,7 @@ fi
 
 #3.2 Remove X Window System	
 printf "\n\e[1mAttempting to remove X Window System.\e[0m\n"
-yum -y remove xorg-x11-server-common
+result=`yum -y remove xorg-x11-server-common`
 printf "\n\e[1mChanging boot target.\e[0m\n"
 cd /etc/systemd/system/
 unlink default.target
@@ -224,7 +288,7 @@ fi
 #3.3 Disable Avahi Server
 printf "\n\e[1mAttempting to disable Avahi Server.\e[0m\n"
 if systemctl is-active avahi-daemon | grep "active" >/dev/null && systemctl is-enabled avahi-daemon | grep "enabled" >/dev/null ; then
-	printf "\e[31mAvahi Server is not disabled. Attempting to disable now.\e[0m\n"
+	printf "\e[34mAvahi Server is not disabled. Attempting to disable now.\e[0m\n"
 	systemctl disable avahi-daemon.service avahi-daemon.socket
 	systemctl stop avahi-daemon.service avahi-daemon.socket
 	printf "\e[32mAvahi Server is now disabled.\e[0m\n"
@@ -236,7 +300,7 @@ fi
 printf "\n\e[1mAttempting to disable CUPS Print Server.\e[0m\n"
 
 if systemctl is-active cups | grep "active" >/dev/null && systemctl is-enabled cups | grep "enabled" >/dev/null ; then
-	printf "\e[31mCUPS is not disabled. Attempting to disable now.\e[0m\n"
+	printf "\e[34mCUPS is not disabled. Attempting to disable now.\e[0m\n"
 	systemctl stop cups
 	systemctl disable cups
 	printf "\e[32mCUPS is now disabled.\e[0m\n"
@@ -270,7 +334,7 @@ printf "\n\e[1mAttempting to configure Network Time Protocol(NTP)\e[0m\n"
 if grep '^restrict default' /etc/ntp.conf | grep "restrict default kod nomodify notrap nopeer noquery" &&  grep '^restrict -6 default' /etc/ntp.conf | grep "restrict -6 default kod nomodify notrap nopeer noquery" >/dev/null ; then
 	printf "\e[32mDefaults are already restricted.\e[0m\n"
 else
-	printf "\e[31mAttempting to restrict defaults\e[0m\n"
+	printf "\e[34mAttempting to restrict defaults\e[0m\n"
 	echo "restrict default kod nomodify notrap nopeer noquery" >> /etc/ntp.conf
 	echo "restrict -6 default kod nomodify notrap nopeer noquery" >> /etc/ntp.conf
 	printf "\e[32mDefaults are restricted.\e[0m\n"
@@ -279,15 +343,16 @@ fi
 if grep "^server" /etc/ntp.conf >/dev/null ; then
 	printf "\e[32mThere is at least one NTP server specified.\e[0m\n"
 else
-	printf "\e[31mThere is no NTP server. Adding server 10.10.10.10.\n"
+	printf "\e[34mThere is no NTP server. Adding server 10.10.10.10.\n"
 	echo "server 10.10.10.10" >> /etc/ntp.conf
+	printf "\e[32mServer 10.10.10.10 added.\e[0m\n"
 	
 fi
 
-if grep "ntp:ntp" /etc/sysconfig/ntpd | grep 'OPTIONS="-u ntp:ntp -p /var/run/ntpd.pid"'>/dev/null ; then
+if `grep "ntp:ntp" /etc/sysconfig/ntpd | grep 'OPTIONS="-u ntp:ntp -p /var/run/ntpd.pid"'`>/dev/null ; then
 	printf "\e[32mOptions configured.\e[0m\n"
 else
-	printf "Options not configured. Attempting to configure...\e[0m\n"
+	printf "\e[34mOptions not configured. Attempting to configure...\e[0m\n"
 	echo 'OPTIONS="-u ntp:ntp -p /var/run/ntpd.pid"'>> /etc/sysconfig/ntpd
 fi
 
@@ -378,7 +443,6 @@ fi
 	
 systemctl restart postfix
 
-#code end
 printf "\e[32mCompleted!\n"
 printf "Press any key to exit\e[0m\n"
 read -n 1 -s
