@@ -35,7 +35,7 @@ trap ctrl_Z 2 20
 
 #create new hard disk first
 printf "\e[1mCreating new hard disk\e[0m\n"
-printf "\e[1m[31mPLEASE CREATE A NEW HARD DISK WITH 20GB\e[0m\n"
+printf "\e[1mPLEASE CREATE A NEW HARD DISK WITH 20GB. This will create /dev/sdb.\e[0m\n"
 parted -s /dev/sdb mklabel msdos #makes an MSDOS partition table 
 parted -s /dev/sdb mkpart primary ext2 0% 100% #make primary partition, from size 0% to 100%
 parted -s /dev/sdb set 1 lvm on #make partition 1 of /dev/sdb an lvm partition
@@ -287,7 +287,7 @@ if [ ls -l /etc/systemd/system/default.target | grep graphical.target ] ; then
 else
 	printf "\e[32mX Windows System is not the default user.\e[0m\n"
 fi
-#yum -y remove xorg-x11-server-common
+
 
 #3.3 Disable Avahi Server
 printf "\n\e[1mAttempting to disable Avahi Server.\e[0m\n"
