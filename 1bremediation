@@ -230,7 +230,7 @@ elif yum list xinetd | grep "Installed Packages" && chkconfig --list daytime-dgr
 elif yum list xinetd | grep "Installed Packages" && chkconfig --list daytime-dgram | grep "off" && chkconfig --list daytime-stream | grep "off" >/dev/null ; then
 	printf "\e[32mDaytime-dgram and daytime-stream are disabled.\e[0m\n"
 else
-	printf "\e[31m One is not disabled. Attempting to disable.\e[0m\n"
+	printf "\e[34m One is not disabled. Attempting to disable.\e[0m\n"
 	result=`chkconfig daytime-dgram off`
 	result=`chkconfig daytime-stream off`
 	printf "\e[32mDisabled.\e[0m\n"
@@ -247,7 +247,7 @@ elif yum list xinetd | grep "Installed Packages" && chkconfig --list echo-dgram 
 elif yum list xinetd | grep "Installed Packages" && chkconfig --list echo-dgram | grep "off" && chkconfig --list echo-stream | grep "off" >/dev/null ; then
 	printf "\e[32mEcho-dgram and Echo-stream are disabled.\e[0m\n"
 else
-	printf "\e[31m One is not disabled. Attempting to disable.\e[0m\n"
+	printf "\e[34m One is not disabled. Attempting to disable.\e[0m\n"
 	result=`chkconfig echo-dgram off`
 	result=`chkconfig echo-stream off`
 	printf "\e[32mDisabled.\e[0m\n"
