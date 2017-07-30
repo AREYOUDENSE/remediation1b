@@ -278,7 +278,7 @@ fi
 
 #3.2 Remove X Window System	
 printf "\n\e[1mAttempting to remove X Window System.\e[0m\n"
-result=`yum -y remove xorg-x11-server-common`
+yum -y remove xorg-x11-server-common
 printf "\n\e[1mChanging boot target.\e[0m\n"
 cd /etc/systemd/system/
 unlink default.target
